@@ -100,7 +100,7 @@ header {
     flex: 0 1 auto;
 }
 
-.grid, .grid-item-content .text-container span {
+.text-container span {
     /* make non-selectable */
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
@@ -111,6 +111,10 @@ header {
 .selected.grid-item-content {
     -webkit-animation: background 5s cubic-bezier(1,0,0,1);
     animation: background 5s cubic-bezier(1,0,0,1);
+}
+
+.ui-selected .grid-item-content {
+    outline: medium solid green !important;
 }
 
 @-webkit-keyframes background {

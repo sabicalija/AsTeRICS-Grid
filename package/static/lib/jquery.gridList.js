@@ -154,7 +154,8 @@
       // positions after each drag change, making an entire drag operation less
       // distructable
       this._createGridSnapshot();
-
+      this._lastDragPosition = ui.helper.position();
+      this._initDragGridPosition = this._snapItemPositionToGrid(this._getItemByElement(ui.helper));
       // Since dragging actually alters the grid, we need to establish the number
       // of cols (+1 extra) before the drag starts
 
@@ -162,8 +163,29 @@
     },
 
     _onDrag: function(event, ui) {
-      var item = this._getItemByElement(ui.helper),
-          newPosition = this._snapItemPositionToGrid(item);
+      var items = [];
+      var draggedItem = this._getItemByElement(ui.helper);
+      var newPosition = this._snapItemPositionToGrid(draggedItem);
+      var dx = ui.helper.position().left - this._lastDragPosition.left;
+      var dy = ui.helper.position().top - this._lastDragPosition.top;
+      var dxGrid = newPosition[0] - this._initDragGridPosition[0];
+      var dyGrid = newPosition[1] - this._initDragGridPosition[1];
+        console.log(dxGrid, dyGrid);
+
+      if(ui.helper.hasClass('ui-selected')) {
+          $('.ui-selected').each((index, elem) => {
+              items.push(elem);
+          })
+      } else {
+          items = [ui.helper];
+      }
+      items.forEach(item => {
+          if($(item).attr('data-id') != ui.helper.attr('data-id')) {
+              item.style.top = (parseInt(item.style.top) + dy) + "px";
+              item.style.left = (parseInt(item.style.left) + dx) + "px";
+          }
+      });
+
 
       if (this._dragPositionChanged(newPosition)) {
         this._previousDragPosition = newPosition;
@@ -174,13 +196,24 @@
 
         // Since the items list is a deep copy, we need to fetch the item
         // corresponding to this drag action again
-        item = this._getItemByElement(ui.helper);
-        this.gridList.moveItemToPosition(item, newPosition);
+        items.forEach(item => {
+            var gridItem = this._getItemByElement(item);
+            if($(item).attr('data-id') != ui.helper.attr('data-id')) {
+                var position = [gridItem.x + dxGrid, gridItem.y + dyGrid];
+                this.gridList.moveItemToPosition(gridItem, position);
+                console.log(position)
+            } else {
+                this.gridList.moveItemToPosition(gridItem, newPosition);
+                console.log(newPosition)
+            }
+        });
+          console.log('---------------')
 
         // Visually update item positions and highlight shape
         this._applyPositionToItems();
-        this._highlightPositionForItem(item);
+        this._highlightPositionForItem(draggedItem);
       }
+      this._lastDragPosition = ui.helper.position();
     },
 
     _onStop: function(event, ui) {

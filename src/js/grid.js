@@ -66,6 +66,11 @@ function Grid(gridContainerId, gridItemClass, options) {
             _gridElement.append(gridElement.toHTML());
         });
 
+        if(dragAndDrop) {
+            $("#grid-container").selectable({
+                filter: "li"
+            });
+        }
         _gridElement.gridList({
             lanes: _gridRows,
             widthHeightRatio: 1,
@@ -83,6 +88,7 @@ function Grid(gridContainerId, gridItemClass, options) {
                 dataService.updateGrid(_gridData.id, _gridData);
             });
         }
+
         initResizing();
         thiz.autosize();
     }
