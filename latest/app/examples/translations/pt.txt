@@ -1,0 +1,111 @@
+Socorro
+Roupas
+Comida
+Humor
+Teclado
+Ambiente
+
+Banheiro
+Doente
+Desconfortável
+Quente
+Frio
+Dormir
+Não entendo
+Quebrado
+De volta
+
+Eu preciso ir ao banheiro
+Eu me sinto doente
+Eu me sinto desconfortável
+Está muito quente
+Está muito frio
+Eu preciso descansar um pouco ou domir
+Eu não entendi
+Alguma coisa está quebrado
+
+Calça
+Camiseta
+Blusa
+Saia
+Vestir
+Sapatos
+Muito apertado
+Muito grande
+
+Eu gostaria de usar uma calça
+Eu gostaria de usar uma camiseta
+Eu gostaria de usar uma blusa
+Eu gostaria de usar uma saia
+Eu gostaria de usar um vestido
+Eu gostaria de calçar sapatos
+Minhas roupas são muito apertados
+Minhas roupas são muito falgadas
+
+Com fome
+Com sede
+Fruta
+Lanche salgado
+Lanche doce
+Agua
+Refrigerante
+Canudo
+
+Eu gostaria de comer alguma coisa
+Eu gostaria de beber alguma coisa
+Eu gostaria de alguma fruta
+Eu gostaria de um lanche salgado
+Eu gostaria de um lanche doce
+Eu gostaria de um pouco de água
+Eu gostaria de um pouco de refrigerante
+Eu preciso de um canudo
+
+Feliz
+Triste
+Com raiva
+Confuso
+Com medo
+Entusiasmado
+Entediado
+Preocupado
+
+Eu me sinto feliz
+Eu me sinto triste
+Eu estou com raiva
+Eu me sinto confuso
+Eu estou com medo
+Eu me sinto entusiasmado
+eu me sinto entediado
+Eu me sinto preocupado
+
+Luzes
+televisão
+Rádio
+Porta
+Aquecedor
+
+Ligar a luz
+Desligar a luz
+
+Ligar a televisão
+Desligar a televisão
+Aumentar o volume
+Baixar o volume
+Desligar o som
+Próximo canal
+Canal anterior
+
+Ligar / desligar
+Ligar
+Parar
+Mudar o modo
+Próxima música
+Música anterior
+Aumentar o volume
+Baixar o volume
+
+Abrir a porta
+Fechar a porta
+
+Aumentar a temperatura
+Baixar a temperatura

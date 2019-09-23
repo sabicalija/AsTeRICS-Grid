@@ -1,0 +1,61 @@
+{
+  "name": "asterics-grid",
+  "version": "0.1.0",
+  "description": "Flexible Grid System for the AsTeRICS Framework",
+  "main": "index.js",
+  "dependencies": {
+    "@sensu/superlogin": "^1.2.1",
+    "cors": "^2.8.5",
+    "morgan": "^1.9.1",
+    "superlogin-client": "^0.8.0",
+    "file-saver": "^1.3.8",
+    "lz-string": "^1.4.4",
+    "navigo": "^7.1.2",
+    "predictionary": "^1.4.3",
+    "vue": "^2.5.17"
+  },
+  "devDependencies": {
+    "webpack": "^4.30.0",
+    "webpack-dev-server": "^3.2.1",
+    "webpack-cli": "^3.3.0",
+    "webpack-bundle-analyzer": "^3.3.2",
+    "appcache-webpack-plugin": "^1.4.0",
+    "clean-webpack-plugin": "^0.1.19",
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.3",
+    "babel-loader": "^7.1.4",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.26.2",
+    "babel-preset-env": "^1.7.0",
+    "css-loader": "^1.0.0",
+    "node-sass": "^4.12.0",
+    "sass-loader": "^7.1.0",
+    "style-loader": "^0.22.1",
+    "vue-loader": "^15.4.0",
+    "vue-template-compiler": "^2.5.17",
+    "jest": "^24.5.0"
+  },
+  "scripts": {
+    "start": "webpack-dev-server",
+    "start-appcache": "npm run build && webpack-dev-server --env.enableAppCache",
+    "start-superlogin-dev": "node superlogin/start.js",
+    "start-superlogin-prod": "node superlogin/start.js prod",
+    "watch": "webpack --watch --config webpack.config.js",
+    "watch-appcache": "webpack --watch --config webpack.config.js --env.enableAppCache",
+    "build": "jest && webpack --config webpack.config.js --env.enableAppCache --env.production",
+    "release": "cp scripts/release.sh scripts/release.tmp.sh && sh scripts/release.tmp.sh && rm scripts/release.tmp.sh",
+    "release-latest": "cp scripts/releaseBeta.sh scripts/releaseBeta.tmp.sh && sh scripts/releaseBeta.tmp.sh && rm scripts/releaseBeta.tmp.sh",
+    "test": "jest",
+    "stats": "webpack --config webpack.config.js --env.enableAppCache --env.production --env.nolog --profile --json > stats.json && webpack-bundle-analyzer stats.json app/build_legacy",
+    "stats-dev": "webpack --config webpack.config.js --env.enableAppCache --env.nolog --profile --json > stats.json && webpack-bundle-analyzer stats.json app/build_legacy"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/asterics/AsTeRICS-Grid.git"
+  },
+  "author": "Benjamin Klaus",
+  "license": "AGPL3",
+  "bugs": {
+    "url": "https://github.com/asterics/AsTeRICS-Grid/issues"
+  },
+  "homepage": "https://github.com/asterics/AsTeRICS-Grid#readme"
+}
