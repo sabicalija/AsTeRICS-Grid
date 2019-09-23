@@ -1,4 +1,4 @@
-import $ from 'jquery';
+import {$} from '../externals/jquery';
 import {localStorageService} from "./data/localStorageService";
 
 let i18nService = {};
@@ -9,13 +9,15 @@ let TRANSLATION_FILE_PATH = 'app/examples/translations/';
 let TRANSLATION_FILE_SUFFIX = '.txt';
 let TRANSLATION_FILE_ORIGINAL = getTranslationFilePath('original');
 let i18nInstance = null;
+let languages = ['en', 'de'];
+let separator = ' // ';
 
 i18nService.initDomI18n = function () {
     if (!i18nInstance) {
         i18nInstance = window.domI18n({
             selector: '[data-i18n]',
-            separator: ' // ',
-            languages: ['en', 'de'],
+            separator: separator,
+            languages: languages,
             enableLog: false
         });
     }
@@ -32,6 +34,12 @@ i18nService.isBrowserLangDE = function () {
 };
 
 i18nService.translate = function (key) {
+    if (key && key.indexOf(separator) > -1) {
+        let translations = key.split(separator);
+        let index = languages.indexOf(i18nService.getBrowserLang());
+        index = index > 0 ? index : 0;
+        return translations[index];
+    }
     var lang = this.translations[this.getBrowserLang()] ? this.getBrowserLang() : 'en';
     var translated = this.translations[lang][key] ? this.translations[lang][key] : key;
     for(var i=1; i<arguments.length; i++) {
@@ -165,6 +173,18 @@ i18nService.translations['en'] = {
     VALIDATION_ERROR_REGEX: 'Username must start lowercase, valid characters are [a-z], [0-9] and ["-", "_"], valid length is 3-50 characters.',
     VALIDATION_ERROR_EXISTING: 'Username is already existing.',
     SEARCH_IMAGE_PLACEHOLDER: 'input search term',
+    HEADER_COMPARE_ONLINE_OFFLINE: 'Information about online/offline users',
+    ADVANCED_SETTINGS: "Advanced Settings",
+    TEST_CONFIGURATION: "Test configuration",
+    SELECT: 'Select element',
+    NEXT: 'Next scanning group',
+    UP: 'Go up',
+    DOWN: 'Go down',
+    LEFT: 'Go left',
+    RIGHT: 'Go right',
+    GENERAL_INPUT: 'Input',
+    InputEventKey: 'Keypress',
+    InputEventARE: 'AsTeRICS ARE event',
     de: 'German',
     en: 'English',
     es: 'Spanish',
@@ -215,6 +235,18 @@ i18nService.translations['de'] = {
     VALIDATION_ERROR_REGEX: 'Username muss mit einem Kleinbuchstaben beginnen, erlaubte Zeichen sind [a-z], [0-9] und ["-", "_"], erlaubte Länge ist 3-50 Zeichen.',
     VALIDATION_ERROR_EXISTING: 'Username existiert bereits.',
     SEARCH_IMAGE_PLACEHOLDER: 'Suchbegriff eingeben',
+    HEADER_COMPARE_ONLINE_OFFLINE: 'Informationen über Online-/Offline-User',
+    ADVANCED_SETTINGS: "Erweiterte Einstellungen",
+    TEST_CONFIGURATION: "Konfiguration testen",
+    SELECT: 'Element auswählen',
+    NEXT: 'Nächste Gruppe',
+    UP: 'Nach oben',
+    DOWN: 'Nach unten',
+    LEFT: 'Nach links',
+    RIGHT: 'Nach rechts',
+    GENERAL_INPUT: 'Eingabe',
+    InputEventKey: 'Tastendruck',
+    InputEventARE: 'AsTeRICS ARE Event',
     de: 'Deutsch',
     en: 'Englisch',
     es: 'Spanisch',

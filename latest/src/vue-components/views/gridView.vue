@@ -13,9 +13,13 @@
             </button>
             <button tabindex="32" @click="applyFullscreen()" class="spaced small"><i class="fas fa-expand"/> <span class="hide-mobile" data-i18n>Fullscreen // Vollbild</span></button>
             <button tabindex="31" v-show="!metadata.locked" @click="toEditGrid()" class="spaced small"><i class="fas fa-pencil-alt"/> <span class="hide-mobile" data-i18n>Edit grid // Grid bearbeiten</span></button>
-            <button tabindex="30" v-show="!metadata.locked" @click="showModal = true" class="small"><i class="fas fa-cog"></i> <span class="hide-mobile" data-i18n>Input options // Eingabeoptionen</span></button>
+            <button tabindex="30" id="inputConfigButton" v-show="!metadata.locked" class="small"><i class="fas fa-cog"></i> <span class="hide-mobile" data-i18n>Input options // Eingabeoptionen</span></button>
         </header>
-        <input-options-modal v-if="showModal" v-bind:metadata-property="metadata" v-bind:scanner="scanner" v-bind:hover="hover" v-bind:clicker="clicker" v-bind:reinit="reinitInputMethods" @close="showModal = false"/>
+
+        <huffman-input-modal v-if="showModal === modalTypes.MODAL_HUFFMAN" @close="showModal = null; reinitInputMethods();"/>
+        <direction-input-modal v-if="showModal === modalTypes.MODAL_DIRECTION" @close="showModal = null; reinitInputMethods();"/>
+        <mouse-modal v-if="showModal === modalTypes.MODAL_MOUSE" @close="showModal = null; reinitInputMethods();"/>
+        <scanning-modal v-if="showModal === modalTypes.MODAL_SCANNING" @close="showModal = null; reinitInputMethods();"/>
         <div class="row content spaced" v-show="viewInitialized && gridData.gridElements && gridData.gridElements.length === 0">
             <div data-i18n="" style="margin-top: 2em">
                 <span>No elements, click <a :href="'#grid/edit/' + gridData.id">Edit grid</a> to enter edit mode.</span>
@@ -47,16 +51,27 @@
     import {Hover} from "../../js/input/hovering.js";
     import {Clicker} from "../../js/input/clicking.js";
 
-    import InputOptionsModal from '../../vue-components/modals/inputOptionsModal.vue'
     import HeaderIcon from '../../vue-components/components/headerIcon.vue'
     import {constants} from "../../js/util/constants";
     import {GridData} from "../../js/model/GridData";
     import {i18nService} from "../../js/service/i18nService";
     import {util} from "../../js/util/util";
+    import {HuffmanInput} from "../../js/input/huffmanInput";
+    import {DirectionInput} from "../../js/input/directionInput";
+    import ScanningModal from '../../vue-components/modals/input/scanningModal.vue'
+    import MouseModal from "../modals/input/mouseModal.vue";
+    import DirectionInputModal from "../modals/input/directionInputModal.vue";
+    import HuffmanInputModal from "../modals/input/huffmanInputModal.vue";
 
     let vueApp = null;
     let gridInstance = null;
     let UNLOCK_COUNT = 8;
+    let modalTypes = {
+        MODAL_SCANNING: 'MODAL_SCANNING',
+        MODAL_MOUSE: 'MODAL_MOUSE',
+        MODAL_DIRECTION: 'MODAL_DIRECTION',
+        MODAL_HUFFMAN: 'MODAL_HUFFMAN',
+    };
 
     let vueConfig = {
         props: ['gridId'],
@@ -67,16 +82,26 @@
                 scanner: null,
                 hover: null,
                 clicker: null,
-                showModal: false,
+                directionInput: null,
+                huffmanInput: null,
+                showModal: null,
+                modalTypes: modalTypes,
                 viewInitialized: false,
                 unlockCount: UNLOCK_COUNT,
                 unlockCounter: UNLOCK_COUNT
             }
         },
         components: {
-            InputOptionsModal, HeaderIcon
+            HuffmanInputModal,
+            DirectionInputModal,
+            MouseModal,
+            ScanningModal, HeaderIcon
         },
         methods: {
+            openModal(modalType) {
+                this.showModal = modalType;
+                stopInputMethods();
+            },
             lock() {
                 let thiz = this;
                 thiz.metadata.locked = true;
@@ -110,68 +135,56 @@
                 if (!gridInstance) {
                     return;
                 }
+
                 let inputConfig = thiz.metadata.inputConfig;
-                thiz.scanner = new Scanner('.grid-item-content', 'scanFocus', {
-                    scanVertical: inputConfig.scanVertical,
-                    subScanRepeat: 3,
-                    scanBinary: inputConfig.scanBinary,
-                    scanInactiveClass: 'scanInactive',
-                    minBinarySplitThreshold: 3,
-                    scanTimeoutMs: inputConfig.scanTimeoutMs,
-                    scanTimeoutFirstElementFactor: inputConfig.scanTimeoutFirstElementFactor,
-                    selectKeyCode: inputConfig.scanKey,
-                    touchScanning: !inputConfig.mouseclickEnabled
-                });
-                if (inputConfig.areURL && inputConfig.areEvents.length > 0) {
-                    let lastSelect = 0;
-                    areService.subscribeEvents(function (eventString) {
-                        if (inputConfig.areEvents.includes(eventString)) {
-                            if (new Date().getTime() - lastSelect > 100) {
-                                log.info('select scanning per ARE event: ' + eventString);
-                                lastSelect = new Date().getTime();
-                                thiz.scanner.select();
-                            }
-                        }
-                    }, inputConfig.areURL);
-                } else {
-                    areService.unsubscribeEvents();
+                window.addEventListener('resize', thiz.resizeListener, true);
+                $(document).on(constants.EVENT_GRID_RESIZE, thiz.resizeListener);
+                if (inputConfig.dirEnabled) {
+                    thiz.directionInput = DirectionInput.getInstanceFromConfig(inputConfig, '.grid-item-content', 'scanFocus', (item) => {
+                        actionService.doAction(gridInstance.getCurrentGridId(), item.id);
+                    });
+                    thiz.directionInput.start();
                 }
-                thiz.hover = new Hover('.grid-item-content', inputConfig.hoverTimeoutMs);
-                thiz.clicker = new Clicker('.grid-item-content');
 
-                gridInstance.setLayoutChangedStartListener(function () {
-                    thiz.scanner.pauseScanning();
-                });
-                gridInstance.setLayoutChangedEndListener(function () {
-                    thiz.scanner.resumeScanning();
-                });
+                if (inputConfig.huffEnabled) {
+                    this.huffmanInput = HuffmanInput.getInstanceFromConfig(inputConfig, '.grid-item-content', 'scanFocus', 'scanInactive', (item) => {
+                        actionService.doAction(gridInstance.getCurrentGridId(), item.id);
+                    });
+                    this.huffmanInput.start();
+                }
 
-                window.addEventListener('resize', function () {
-                    thiz.scanner.layoutChanged();
-                }, true);
+                if (inputConfig.scanEnabled) {
+                    thiz.scanner = Scanner.getInstanceFromConfig(inputConfig, '.grid-item-content', 'scanFocus', 'scanInactive');
+                    thiz.scanner.setSelectionListener(function (item) {
+                        L.removeAddClass(item, 'selected');
+                        actionService.doAction(gridInstance.getCurrentGridId(), item.id);
+                    });
 
-                thiz.scanner.setSelectionListener(function (item) {
-                    L.removeAddClass(item, 'selected');
-                    actionService.doAction(gridInstance.getCurrentGridId(), item.id);
-                });
+                    gridInstance.setLayoutChangedStartListener(function () {
+                        thiz.scanner.pauseScanning();
+                    });
+                    gridInstance.setLayoutChangedEndListener(function () {
+                        thiz.scanner.resumeScanning();
+                    });
 
-                thiz.hover.setSelectionListener(function (item) {
-                    L.removeAddClass(item, 'selected');
-                    actionService.doAction(thiz.gridData.id, item.id);
-                });
-
-                thiz.clicker.setSelectionListener(function (item) {
-                    L.removeAddClass(item, 'selected');
-                    actionService.doAction(thiz.gridData.id, item.id);
-                });
-
-                if (inputConfig.scanAutostart) {
                     thiz.scanner.startScanning();
                 }
+
                 if (inputConfig.hoverEnabled) {
+                    thiz.hover = new Hover('.grid-item-content', inputConfig.hoverTimeoutMs);
+                    thiz.hover.setSelectionListener(function (item) {
+                        L.removeAddClass(item, 'selected');
+                        actionService.doAction(thiz.gridData.id, item.id);
+                    });
                     thiz.hover.startHovering();
                 }
+
                 if (inputConfig.mouseclickEnabled) {
+                    thiz.clicker = new Clicker('.grid-item-content');
+                    thiz.clicker.setSelectionListener(function (item) {
+                        L.removeAddClass(item, 'selected');
+                        actionService.doAction(thiz.gridData.id, item.id);
+                    });
                     thiz.clicker.startClickcontrol();
                 }
             },
@@ -239,6 +252,14 @@
                 }
                 vueApp.metadata.fullscreen = false;
                 $(document).trigger(constants.EVENT_GRID_RESIZE);
+            },
+            resizeListener() {
+                let thiz = this;
+                util.debounce(function () {
+                    if (thiz.huffmanInput) {
+                        thiz.huffmanInput.reinit();
+                    }
+                }, 500);
             }
         },
         computed: {
@@ -271,7 +292,7 @@
                 metadata.locked = metadata.locked === undefined ? urlParamService.isDemoMode() : metadata.locked;
                 metadata.fullscreen = metadata.fullscreen === undefined ? urlParamService.isDemoMode() : metadata.fullscreen;
                 if (urlParamService.isScanningDisabled()) {
-                    metadata.inputConfig.scanAutostart = false;
+                    metadata.inputConfig.scanEnabled = false;
                 }
                 if (urlParamService.hideHeader()) {
                     metadata.headerPinned = false;
@@ -285,6 +306,7 @@
             }).then(() => {
                 return initGrid(thiz.gridData.id);
             }).then(() => {
+                initContextmenu();
                 thiz.viewInitialized = true;
                 thiz.initInputMethods();
             }).catch((e) => {
@@ -299,7 +321,7 @@
             $(document).off(constants.EVENT_DB_PULL_UPDATED, this.reloadFn);
             $(document).off(constants.EVENT_SIDEBAR_OPEN, this.onSidebarOpen);
             stopInputMethods();
-            areService.unsubscribeEvents();
+            $.contextMenu('destroy');
             vueApp = null;
             if (gridInstance) {
                 gridInstance.destroy();
@@ -309,9 +331,13 @@
     };
 
     function stopInputMethods() {
-        if (vueApp && vueApp.scanner) vueApp.scanner.stopScanning();
-        if (vueApp && vueApp.hover) vueApp.hover.stopHovering();
-        if (vueApp && vueApp.clicker) vueApp.clicker.stopClickcontrol();
+        if (vueApp) window.removeEventListener('resize', vueApp.resizeListener, true);
+        if (vueApp) $(document).off(constants.EVENT_GRID_RESIZE, vueApp.resizeListener);
+        if (vueApp && vueApp.scanner) vueApp.scanner.destroy();
+        if (vueApp && vueApp.hover) vueApp.hover.destroy();
+        if (vueApp && vueApp.clicker) vueApp.clicker.destroy();
+        if (vueApp && vueApp.directionInput) vueApp.directionInput.destroy();
+        if (vueApp && vueApp.huffmanInput) vueApp.huffmanInput.destroy();
     }
 
     function initGrid(gridId) {
@@ -321,6 +347,62 @@
             gridId: gridId
         });
         return gridInstance.getInitPromise();
+    }
+
+    function initContextmenu() {
+        let CONTEXT_MOUSE = "CONTEXT_MOUSE";
+        let CONTEXT_SCANNING = "CONTEXT_SCANNING";
+        let CONTEXT_DIRECTION = "CONTEXT_DIRECTION";
+        let CONTEXT_HUFFMAN = "CONTEXT_HUFFMAN";
+
+        let contextItems = {
+            CONTEXT_MOUSE: {
+                name: "Mouse input // Mauseingabe",
+                icon: "fas fa-mouse-pointer"
+            },
+            CONTEXT_SCANNING: {
+                name: "Scanning",
+                icon: "fas fa-sort-amount-down"
+            },
+            CONTEXT_DIRECTION: {
+                name: "Direction input // Richtungs-Eingabe",
+                icon: "fas fa-arrows-alt"
+            },
+            CONTEXT_HUFFMAN: {
+                name: "Huffman input // Huffman-Eingabe",
+                icon: "fas fa-ellipsis-h"
+            }
+        };
+
+        $.contextMenu({
+            selector: '#inputConfigButton',
+            callback: function (key, options) {
+                handleContextMenu(key);
+            },
+            trigger: 'left',
+            items: contextItems
+        });
+
+        function handleContextMenu(key, elementId) {
+            switch (key) {
+                case CONTEXT_MOUSE: {
+                    vueApp.openModal(modalTypes.MODAL_MOUSE);
+                    break;
+                }
+                case CONTEXT_SCANNING: {
+                    vueApp.openModal(modalTypes.MODAL_SCANNING);
+                    break;
+                }
+                case CONTEXT_DIRECTION: {
+                    vueApp.openModal(modalTypes.MODAL_DIRECTION);
+                    break;
+                }
+                case CONTEXT_HUFFMAN: {
+                    vueApp.openModal(modalTypes.MODAL_HUFFMAN);
+                    break;
+                }
+            }
+        }
     }
 
     export default vueConfig;

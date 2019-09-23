@@ -1,6 +1,27 @@
 import {L} from "../util/lquery.js";
+import {inputEventHandler} from "./inputEventHandler";
+import {InputEventKey} from "../model/InputEventKey";
+import {InputConfig} from "../model/InputConfig";
 
-function Scanner(itemSelector, scanActiveClass, options) {
+let Scanner = {};
+
+Scanner.getInstanceFromConfig = function (inputConfig, itemSelector, scanActiveClass, scanInactiveClass) {
+    return new ScannerConstructor(itemSelector, scanActiveClass, {
+        autoScan: inputConfig.scanAuto,
+        scanVertical: inputConfig.scanVertical,
+        subScanRepeat: 3,
+        scanBinary: inputConfig.scanBinary,
+        scanInactiveClass: scanInactiveClass,
+        minBinarySplitThreshold: 3,
+        scanTimeoutMs: inputConfig.scanTimeoutMs,
+        scanTimeoutFirstElementFactor: inputConfig.scanTimeoutFirstElementFactor,
+        touchScanning: !inputConfig.mouseclickEnabled,
+        inputEventSelect: inputConfig.scanInputs.filter(e => e.label === InputConfig.SELECT)[0],
+        inputEventNext: inputConfig.scanInputs.filter(e => e.label === InputConfig.NEXT)[0]
+    });
+};
+
+function ScannerConstructor(itemSelector, scanActiveClass, options) {
     var thiz = this;
 
     //options
@@ -14,6 +35,7 @@ function Scanner(itemSelector, scanActiveClass, options) {
     var scanBinary = false;
     var touchScanning = true;
     var scanTimeoutFirstElementFactor = 1.0;
+    var autoScan = true;
 
     //internal
     var _selectionListener = null;
@@ -22,8 +44,10 @@ function Scanner(itemSelector, scanActiveClass, options) {
     var _scanTimeoutHandler = null;
     var _layoutChangeTimeoutHandler = null;
     var _scanningPaused = false;
-    var _keydownEventListeners = [];
     var _touchListener = null;
+    var _touchElement = null;
+    let _inputEventHandler = null;
+    let _nextScanFn = null;
 
     function init() {
         parseOptions(options);
@@ -40,13 +64,19 @@ function Scanner(itemSelector, scanActiveClass, options) {
             scanBinary = options.scanBinary != undefined ? options.scanBinary : scanBinary;
             touchScanning = options.touchScanning != undefined ? options.touchScanning : touchScanning;
             scanTimeoutFirstElementFactor = options.scanTimeoutFirstElementFactor != undefined ? options.scanTimeoutFirstElementFactor : scanTimeoutFirstElementFactor;
+            autoScan = options.autoScan !== undefined ? options.autoScan : true;
         }
         if(touchScanning) thiz.enableTouchScanning();
-        thiz.clearSelectKeys();
-        thiz.addSelectKeyCode(options.selectKeyCode);
-        thiz.addSelectKey(options.selectKey);
-        if (_keydownEventListeners.length == 0) {
-            thiz.addSelectKeyCode(32); //space as default key
+        _inputEventHandler = inputEventHandler.instance();
+
+        if (options.inputEventSelect) {
+            _inputEventHandler.onInputEvent(options.inputEventSelect, thiz.select);
+        } else {
+            _inputEventHandler.onInputEvent(new InputEventKey({keyCode: 32}), thiz.select); //space as default key
+        }
+
+        if (options.inputEventNext) {
+            _inputEventHandler.onInputEvent(options.inputEventNext, thiz.next);
         }
     }
 
@@ -206,6 +236,7 @@ function Scanner(itemSelector, scanActiveClass, options) {
     }
 
     function scan(elems, firstElementDelay, index, count) {
+        _inputEventHandler.startListening();
         elems = elems || [];
         count = count || 0;
         index = index || 0;
@@ -221,10 +252,15 @@ function Scanner(itemSelector, scanActiveClass, options) {
             L.addClass(elems[index], scanActiveClass);
             L.removeClass(elems, scanInactiveClass);
             _currentActiveScanElements = elems[index];
-            var timeout = index == 0 && firstElementDelay && elems.length > 2 ? scanTimeoutMs * scanTimeoutFirstElementFactor : scanTimeoutMs;
-            _scanTimeoutHandler = setTimeout(function () {
+            _nextScanFn = () => {
                 scan(elems, true, index + 1, count + 1);
-            }, timeout);
+            };
+            if (autoScan) {
+                let timeout = index === 0 && firstElementDelay && elems.length > 2 ? scanTimeoutMs * scanTimeoutFirstElementFactor : scanTimeoutMs;
+                _scanTimeoutHandler = setTimeout(function () {
+                    _nextScanFn();
+                }, timeout);
+            }
         }
     }
 
@@ -255,6 +291,7 @@ function Scanner(itemSelector, scanActiveClass, options) {
             } else {
                 scan(spitToSubarrays(rows), true);
             }
+            _inputEventHandler.startListening();
         }
     };
 
@@ -265,6 +302,13 @@ function Scanner(itemSelector, scanActiveClass, options) {
         }
         L.removeClass(itemSelector, scanActiveClass);
         L.removeClass(itemSelector, scanInactiveClass);
+        _inputEventHandler.stopListening();
+    };
+
+    thiz.destroy = function() {
+        thiz.stopScanning();
+        thiz.disableTouchScanning();
+        _inputEventHandler.destroy();
     };
 
     /**
@@ -353,37 +397,20 @@ function Scanner(itemSelector, scanActiveClass, options) {
                 scan(spitToSubarrays(_currentActiveScanElements), true);
             } else if (L.flattenArray(_currentActiveScanElements).length > 1) {
                 scan(spitToSubarrays(L.flattenArray(_currentActiveScanElements)), true);
-            } else if (_selectionListener) {
-                _selectionListener(L.flattenArray(_currentActiveScanElements)[0]);
+            } else {
+                if (_selectionListener) {
+                    _selectionListener(L.flattenArray(_currentActiveScanElements)[0]);
+                }
                 thiz.restartScanning();
             }
         }
     };
 
-    thiz.addSelectKeyCode = function (keyCode) {
-        if (keyCode) {
-            var fn = function (event) {
-                let currentKey = event.which || event.keyCode;
-                if (currentKey === keyCode && _isScanning) {
-                    event.preventDefault();
-                    thiz.select();
-                }
-            };
-            document.addEventListener("keydown", fn);
-            _keydownEventListeners.push(fn);
+    thiz.next = function () {
+        if (_nextScanFn) {
+            clearTimeout(_scanTimeoutHandler);
+            _nextScanFn();
         }
-    };
-
-    thiz.addSelectKey = function (character) {
-        var keyCode = L.convertToKeyCode(character);
-        thiz.addSelectKeyCode(keyCode);
-    };
-
-    thiz.clearSelectKeys = function () {
-        _keydownEventListeners.forEach(function (fn) {
-            document.removeEventListener("keydown", fn);
-        });
-        _keydownEventListeners = [];
     };
 
     thiz.enableTouchScanning = function () {
@@ -391,13 +418,14 @@ function Scanner(itemSelector, scanActiveClass, options) {
             _touchListener = function () {
                 thiz.select();
             };
-            L('#grid-container').addEventListener("click", _touchListener);
+            _touchElement = L('.area')[0] ? L('.area')[0] : L('#grid-container');
+            _touchElement.addEventListener("click", _touchListener);
         }
     };
 
     thiz.disableTouchScanning = function () {
         if(_touchListener) {
-            L('#grid-container').removeEventListener("click", _touchListener);
+            _touchElement.removeEventListener("click", _touchListener);
             _touchListener = null;
         }
     };
