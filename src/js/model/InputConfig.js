@@ -35,7 +35,10 @@ class InputConfig extends Model({
     huffShowNumbers: [Boolean],
     huffColorWholeElement: [Boolean],
     huffTimeout: [Number],
-    huffMarkInactive: [Boolean]
+    huffMarkInactive: [Boolean],
+    eyeTrackingEnabled: [Boolean],
+    eyeTrackingInputs: [Model.Array(Object)],
+    eyeTrackingProvider: [String]
 }) {
     constructor(properties, elementToCopy) {
         properties = modelUtil.setDefaults(properties, elementToCopy, InputConfig);
@@ -93,8 +96,16 @@ InputConfig.DEFAULT_HUFF_INPUTS = [
     new InputEventKey({label: InputConfig.GENERAL_INPUT, keyCode: 51, keyName: "Digit3"}),
     new InputEventKey({label: InputConfig.GENERAL_INPUT, keyCode: 52, keyName: "Digit4"})
 ];
+InputConfig.DEFAULT_EYE_INPUTS = [
+    new InputEventKey({ label: InputConfig.SELECT, keyCode: 32, keyName: "Space" })
+]
 InputConfig.DEFAULT_HUFF_COLORS = ['#D55E00', '#F0E442', '#009E73', '#0072B2',
     '#CC79A7', '#E69F00', '#56B4E9', '#000000', '#016619'];
+
+InputConfig.EYE_TRACKING_PROVIDER_WEBGAZER = "WebGazer";
+InputConfig.EYE_TRACKING_PROVIDER_GAZECLOUD = "GazeCloud API";
+InputConfig.EYE_TRACKING_PROVIDER_SEESO = "seeso.io";
+InputConfig.DEFAULT_EYE_PROVIDER = [InputConfig.EYE_TRACKING_PROVIDER_WEBGAZER, InputConfig.EYE_TRACKING_PROVIDER_GAZECLOUD, InputConfig.EYE_TRACKING_PROVIDER_SEESO];
 
 InputConfig.defaults({
     id: "", //will be replaced by constructor
@@ -116,7 +127,8 @@ InputConfig.defaults({
     huffShowNumbers: true,
     huffElementCount: 0,
     huffTimeout: 4000,
-    huffMarkInactive: true
+    huffMarkInactive: true,
+    eyeTrackingInputs: InputConfig.DEFAULT_EYE_INPUTS,
 });
 
 export {InputConfig};
