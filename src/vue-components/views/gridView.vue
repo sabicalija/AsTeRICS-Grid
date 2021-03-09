@@ -24,6 +24,7 @@
         <mouse-modal v-if="showModal === modalTypes.MODAL_MOUSE" @close="showModal = null; reinitInputMethods();"/>
         <scanning-modal v-if="showModal === modalTypes.MODAL_SCANNING" @close="showModal = null; reinitInputMethods();"/>
         <sequential-input-modal v-if="showModal === modalTypes.MODAL_SEQUENTIAL" @close="showModal = null; reinitInputMethods();"/>
+        <eye-tracking-input-modal v-if="showModal === modalTypes.MODAL_EYETRACKING" @close="showModal = null, reinitInputMethods();"/>
         <unlock-modal v-if="showModal === modalTypes.MODAL_UNLOCK" @unlock="unlock(true)" @close="showModal = null;"/>
 
         <div class="row content spaced" v-show="viewInitialized && gridData.gridElements && gridData.gridElements.length === 0 && (!globalGridData || globalGridData.length === 0)">
@@ -59,6 +60,7 @@
     import {HuffmanInput} from "../../js/input/huffmanInput";
     import {DirectionInput} from "../../js/input/directionInput";
     import {SequentialInput} from "../../js/input/sequentialInput";
+    import {EyeTracker} from "../../js/input/eyetracking.js";
 
     import HeaderIcon from '../../vue-components/components/headerIcon.vue'
     import {constants} from "../../js/util/constants";
@@ -70,6 +72,7 @@
     import DirectionInputModal from "../modals/input/directionInputModal.vue";
     import HuffmanInputModal from "../modals/input/huffmanInputModal.vue";
     import SequentialInputModal from "../modals/input/sequentialInputModal.vue";
+    import EyeTrackingInputModal from "../modals/input/eyeTrackingInputModal.vue";
     import {speechService} from "../../js/service/speechService";
     import {localStorageService} from "../../js/service/data/localStorageService";
     import {imageUtil} from "../../js/util/imageUtil";
@@ -85,6 +88,7 @@
         MODAL_DIRECTION: 'MODAL_DIRECTION',
         MODAL_HUFFMAN: 'MODAL_HUFFMAN',
         MODAL_SEQUENTIAL: 'MODAL_SEQUENTIAL',
+        MODAL_EYETRACKING: "MODAL_EYETRACKING",
         MODAL_UNLOCK: 'MODAL_UNLOCK'
     };
 
@@ -101,6 +105,7 @@
                 clicker: null,
                 directionInput: null,
                 seqInput: null,
+                eyeTrackingInput: null,
                 huffmanInput: null,
                 showModal: null,
                 modalTypes: modalTypes,
@@ -111,6 +116,7 @@
         },
         components: {
             UnlockModal,
+            EyeTrackingInputModal,
             SequentialInputModal,
             HuffmanInputModal,
             DirectionInputModal,
@@ -224,6 +230,12 @@
                     thiz.clicker = new Clicker('.grid-item-content');
                     thiz.clicker.setSelectionListener(selectionListener);
                     thiz.clicker.startClickcontrol();
+                }
+
+                if (inputConfig.eyeTrackingEnabled) {
+                    thiz.eyeTrackingInput = new EyeTracker.getInstanceFromConfig(inputConfig, '');
+                    thiz.eyeTrackingInput.initTracking();
+                    thiz.eyeTrackingInput.startTracking();
                 }
             },
             reinitInputMethods() {
@@ -356,6 +368,7 @@
                 metadata.inputConfig.scanEnabled = urlParamService.isScanningEnabled() ? true : metadata.inputConfig.scanEnabled;
                 metadata.inputConfig.dirEnabled = urlParamService.isDirectionEnabled() ? true : metadata.inputConfig.dirEnabled;
                 metadata.inputConfig.huffEnabled = urlParamService.isHuffmanEnabled() ? true : metadata.inputConfig.huffEnabled;
+                // metadata.inputConfig.eyeTrackingEnabled = urlParamService.isEyeTrackingEnabled() ? true : metadata.inputConfig.eyeTrackingEnabled; // FIXME
                 dataService.saveMetadata(metadata).then(() => {
                     if (metadata.locked) {
                         $(document).trigger(constants.EVENT_SIDEBAR_CLOSE);
@@ -414,6 +427,7 @@
         if (vueApp && vueApp.directionInput) vueApp.directionInput.destroy();
         if (vueApp && vueApp.huffmanInput) vueApp.huffmanInput.destroy();
         if (vueApp && vueApp.seqInput) vueApp.seqInput.destroy();
+        if (vueApp && vueApp.eyeTrackingInput) vueApp.eyeTrackingInput.destroy();
     }
 
     function initGrid(gridId) {
@@ -434,6 +448,7 @@
         let CONTEXT_DIRECTION = "CONTEXT_DIRECTION";
         let CONTEXT_HUFFMAN = "CONTEXT_HUFFMAN";
         let CONTEXT_SEQUENTIAL = "CONTEXT_SEQUENTIAL";
+        let CONTEXT_EYETRACKING = "CONTEXT_EYETRACKING";
 
         function getActiveText(isActive, german) {
             let text = german ? ' (aktiv)' : ' (active)'
@@ -471,6 +486,11 @@
                 name: getName('Sequential input', 'Sequentielle Eingabe', inputConfig.seqEnabled),
                 icon: "fas fa-arrow-right",
                 className: inputConfig.seqEnabled ? 'boldFont' : ''
+            },
+            CONTEXT_EYETRACKING: {
+                name: getName('Eye-Tracking', 'Augensteuerung', inputConfig.eyeTrackingEnabled),
+                icon: 'fas fa-eye',
+                className: inputConfig.eyeTrackingEnabled ? 'boldFont' : ''
             }
         };
 
@@ -505,6 +525,9 @@
                 case CONTEXT_SEQUENTIAL: {
                     vueApp.openModal(modalTypes.MODAL_SEQUENTIAL);
                     break;
+                }
+                case CONTEXT_EYETRACKING: {
+                    vueApp.openModal(modalTypes.MODAL_EYETRACKING);
                 }
             }
         }
