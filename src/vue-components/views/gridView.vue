@@ -78,6 +78,7 @@
     import {imageUtil} from "../../js/util/imageUtil";
     import UnlockModal from "../modals/unlockModal.vue";
     import {printService} from "../../js/service/printService";
+import { InputConfig } from '../../js/model/InputConfig.js';
 
     let vueApp = null;
     let gridInstance = null;
@@ -233,7 +234,7 @@
                 }
 
                 if (inputConfig.eyeTrackingEnabled) {
-                    thiz.eyeTrackingInput = new EyeTracker.getInstanceFromConfig(inputConfig, '');
+                    thiz.eyeTrackingInput = new EyeTracker.getInstanceFromConfig(inputConfig, '.grid-item-content', 'eyeFocus');
                     thiz.eyeTrackingInput.initTracking();
                     thiz.eyeTrackingInput.startTracking();
                 }
@@ -427,7 +428,7 @@
         if (vueApp && vueApp.directionInput) vueApp.directionInput.destroy();
         if (vueApp && vueApp.huffmanInput) vueApp.huffmanInput.destroy();
         if (vueApp && vueApp.seqInput) vueApp.seqInput.destroy();
-        if (vueApp && vueApp.eyeTrackingInput) vueApp.eyeTrackingInput.destroy();
+        if (vueApp && vueApp.eyeTrackingInput && vueApp.eyeTrackingProvider !== InputConfig.EYE_TRACKING_PROVIDER_GAZECLOUD) vueApp.eyeTrackingInput.destroy();
     }
 
     function initGrid(gridId) {

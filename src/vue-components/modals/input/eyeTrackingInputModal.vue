@@ -139,6 +139,7 @@
                 thiz.metadata = JSON.parse(JSON.stringify(metadata));
                 thiz.inputConfig = JSON.parse(JSON.stringify(metadata.inputConfig));
                 // thiz.inputConfig.eyeTrackingProvider = JSON.parse(JSON.stringify(metadata.inputConfig.eyeTrackingProvider|| InputConfig.EYE_TRACKING_PROVIDER_GAZECLOUD));
+                thiz.inputConfig.eyeTrackingProvider = JSON.parse(JSON.stringify(metadata.inputConfig.eyeTrackingProvider|| InputConfig.EYE_TRACKING_PROVIDER_WEBGAZER));
             });
             // helpService.setHelpLocation('04_input_options', '#eye-tracking'); // FIXME
         },

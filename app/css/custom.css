@@ -177,6 +177,92 @@ nav li:hover button span {
     outline: thick solid red !important;
 }
 
+.eyeFocus-0 {
+    /* outline: thick solid #FFFFFF !important; */
+}
+
+.eyeFocus-5 {
+    outline: thick solid #F9F8F8 !important;
+}
+
+.eyeFocus-10 {
+    outline: thick solid #F4F1F1 !important;
+}
+
+.eyeFocus-15 {
+    outline: thick solid #EFE9E9 !important;
+}
+
+.eyeFocus-20 {
+    outline: thick solid #EBE0E0 !important;
+}
+
+.eyeFocus-25 {
+    outline: thick solid #E7D7D7 !important;
+}
+
+.eyeFocus-30 {
+    outline: thick solid #E4CDCD !important;
+}
+
+.eyeFocus-35 {
+    outline: thick solid #E2C3C3 !important;
+}
+
+.eyeFocus-40 {
+    outline: thick solid #E0B8B8 !important;
+}
+
+.eyeFocus-45 {
+    outline: thick solid #DFACAC !important;
+}
+
+.eyeFocus-50 {
+    outline: thick solid #DF9F9F !important;
+}
+
+.eyeFocus-55 {
+    outline: thick solid #DF9292 !important;
+}
+
+.eyeFocus-60 {
+    outline: thick solid #E08585 !important;
+}
+
+.eyeFocus-65 {
+    outline: thick solid #E27676 !important;
+}
+
+.eyeFocus-70 {
+    outline: thick solid #E46767 !important;
+}
+
+.eyeFocus-75 {
+    outline: thick solid #E75858 !important;
+}
+
+.eyeFocus-80 {
+    outline: thick solid #EB4747 !important;
+}
+
+.eyeFocus-85 {
+    outline: thick solid #EF3737 !important;
+}
+
+.eyeFocus-90 {
+    outline: thick solid #F42525 !important;
+}
+
+.eyeFocus-95 {
+    outline: thick solid #F91313 !important;
+}
+
+.eyeFocus-100 {
+    outline: thick solid #FF0000 !important;
+}
+
+
+
 .text-content {
     margin-left: 1em;
 }
