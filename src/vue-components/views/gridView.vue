@@ -53,6 +53,7 @@
     import {Router} from "./../../js/router.js";
     import {MetaData} from "../../js/model/MetaData.js";
     import {urlParamService} from "../../js/service/urlParamService";
+    import {eyeTrackingService} from "../../js/service/eyeTrackingService";
 
     import {Scanner} from "../../js/input/scanning.js";
     import {Hover} from "../../js/input/hovering.js";
@@ -235,8 +236,12 @@ import { InputConfig } from '../../js/model/InputConfig.js';
 
                 if (inputConfig.eyeTrackingEnabled) {
                     thiz.eyeTrackingInput = new EyeTracker.getInstanceFromConfig(inputConfig, '.grid-item-content', 'eyeFocus');
-                    thiz.eyeTrackingInput.initTracking();
-                    thiz.eyeTrackingInput.startTracking();
+                    // thiz.eyeTrackingInput.initTracking();
+                    // thiz.eyeTrackingInput.startTracking();
+                    console.log("DEBUG", "DUMMY", "gridView", inputConfig)
+                    eyeTrackingService.init(inputConfig);
+                    eyeTrackingService.register(thiz.eyeTrackingInput.update);
+                    eyeTrackingService.start();
                 }
             },
             reinitInputMethods() {
@@ -420,6 +425,7 @@ import { InputConfig } from '../../js/model/InputConfig.js';
     };
 
     function stopInputMethods() {
+        console.log("DEBUG", "stopInputMethods");
         if (vueApp) window.removeEventListener('resize', vueApp.resizeListener, true);
         if (vueApp) $(document).off(constants.EVENT_GRID_RESIZE, vueApp.resizeListener);
         if (vueApp && vueApp.scanner) vueApp.scanner.destroy();
@@ -428,7 +434,10 @@ import { InputConfig } from '../../js/model/InputConfig.js';
         if (vueApp && vueApp.directionInput) vueApp.directionInput.destroy();
         if (vueApp && vueApp.huffmanInput) vueApp.huffmanInput.destroy();
         if (vueApp && vueApp.seqInput) vueApp.seqInput.destroy();
-        if (vueApp && vueApp.eyeTrackingInput && vueApp.eyeTrackingProvider !== InputConfig.EYE_TRACKING_PROVIDER_GAZECLOUD) vueApp.eyeTrackingInput.destroy();
+        if (vueApp && vueApp.eyeTrackingInput && vueApp.eyeTrackingProvider !== InputConfig.EYE_TRACKING_PROVIDER_GAZECLOUD) {
+            eyeTrackingService.unregister(vueApp.eyeTrackingInput.update);
+            vueApp.eyeTrackingInput.destroy();
+        }
     }
 
     function initGrid(gridId) {

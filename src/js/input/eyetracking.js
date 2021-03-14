@@ -3,8 +3,6 @@ import { inputEventHandler } from "./inputEventHandler";
 import { InputEventKey } from "../model/InputEventKey";
 import { InputConfig } from "../model/InputConfig";
 
-import WebGazer from "webgazer";
-
 let EyeTracker = {};
 
 EyeTracker.getInstanceFromConfig = function (inputConfig, itemSelector, eyeActiveClass) {
@@ -29,7 +27,7 @@ function EyeTrackerConstructor(itemSelector, eyeActiveClass, options) {
     // internal
     var _x = 0;
     var _y = 0;
-    var _isTracking = false;
+    var _initialized = false;
     var _updateTime = 0;
     var _lastUpdateTime = 0;
     var _currentGridTarget = null;
@@ -64,8 +62,9 @@ function EyeTrackerConstructor(itemSelector, eyeActiveClass, options) {
     }
 
     function destroyEstimationPoint() {
-        if (!showGazeEstimationPoint) return;
+        if (!showGazeEstimationPoint || !thiz._gazePoint) return;
         document.body.removeChild(thiz._gazePoint);
+        thiz._gazePoint = null;
     }
 
     function updateEstimationPoint() {
@@ -137,7 +136,7 @@ function EyeTrackerConstructor(itemSelector, eyeActiveClass, options) {
         return values[valuePos];
     }
 
-    function evaluateState() {
+    function evaluateStats() {
         const maxCounter = Math.max(...thiz._stats.map(({ counter }) => counter));
         if (maxCounter > clickDuration) {
             const elementIdx = thiz._stats.findIndex(stat => maxCounter === stat.counter);
@@ -148,98 +147,34 @@ function EyeTrackerConstructor(itemSelector, eyeActiveClass, options) {
         }
     }
 
-    function update() {
+    function initEyeTracking() {
+        console.log("DEBUG", "initEyeTracking");
+        initStats();
+        initEstimationPoint();
+        thiz._initialized = true;
+    }
+
+    function updateEstimationPoints({x, y}) {
         thiz._updateTime =  Date.now();
+        thiz._x = x;
+        thiz._y = y;
+    }
+
+    thiz.update = function (data) {
+        if (!thiz._initialized) initEyeTracking();
+
+        updateEstimationPoints(data);
         estimateGaze();
         updateStats();
         updateGrid();
         updateEstimationPoint();
-        evaluateState();
-        console.log("DEBUG", "update", thiz._stats);
+        evaluateStats();
+        // console.log("DEBUG", "update", thiz._stats);
     }
-
-    thiz.initTracking = function () {
-        switch (eyeTrackingProvider) {
-        case InputConfig.EYE_TRACKING_PROVIDER_WEBGAZER:
-            window.applyCalmanFilter = true;
-            window.saveDataAccrossSessions = true;
-            WebGazer.params.showVideoPreview = true;
-            WebGazer.showPredictionPoints(false);
-            WebGazer.showVideo(false);
-            WebGazer.showFaceOverlay(false);
-            WebGazer.showFaceFeedbackBox(false);
-            WebGazer.setRegression("ridge");
-            WebGazer.setGazeListener(function (data) {
-                if (data) {
-                    thiz._x = data.x;
-                    thiz._y = data.y;
-                    update();
-                }
-            });
-            break;
-        case InputConfig.EYE_TRACKING_PROVIDER_GAZECLOUD:
-            window.GazeCloudAPI.UseClickRecalibration = true;
-            window.GazeCloudAPI.OnResult = function (data) {
-                if (data) {
-                    thiz._x = data.docX;
-                    thiz._y = data.docY;
-                    update();
-                }
-            };
-            break;
-        case InputConfig.EYE_TRACKING_PROVIDER_SEESO:
-            console.log("DEBUG", InputConfig.EYE_TRACKING_PROVIDER_SEESO);
-            break;
-        }
-    };
-
-    thiz.calibrateTracking = function () {
-        switch (eyeTrackingProvider) {
-        case InputConfig.EYE_TRACKING_PROVIDER_WEBGAZER:
-            // Do stuff
-            break;
-        case InputConfig.EYE_TRACKING_PROVIDER_GAZECLOUD:
-            // Do stuff
-            break;
-        }
-    };
-
-    thiz.startTracking = function () {
-        if (!_isTracking) {
-            _isTracking = true;
-            initStats();
-            initEstimationPoint();
-            switch (eyeTrackingProvider) {
-                case InputConfig.EYE_TRACKING_PROVIDER_WEBGAZER:
-                WebGazer.begin();
-                break;
-                case InputConfig.EYE_TRACKING_PROVIDER_GAZECLOUD:
-                window.GazeCloudAPI.StartEyeTracking();
-                break;
-            }
-        }
-    };
-
-    thiz.stopTracking = function () {
-        _isTracking = false;
-        destroyEstimationPoint();
-        switch (eyeTrackingProvider) {
-          case InputConfig.EYE_TRACKING_PROVIDER_WEBGAZER:
-            WebGazer.clearGazeListener();
-            // WebGazer.end(); // FIXME: "NotFoundError: Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node."
-            break;
-          case InputConfig.EYE_TRACKING_PROVIDER_GAZECLOUD:
-            window.GazeCloudAPI.StopEyeTracking();
-            break;
-        }
-    };
-
-    // thiz.getCurrentPrediction = function () {
-    //     return { x: _x, y: _y };
-    // }
-
+    
     thiz.destroy = function () {
-        thiz.stopTracking();
+        destroyEstimationPoint();
+        thiz._initialized = false;
     };
     init();
 }
